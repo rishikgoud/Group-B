@@ -40,7 +40,7 @@ export const useContracts = () => {
   return useAPI(() => contractAPI.list());
 };
 
-export const useContract = (contractId: number | null) => {
+export const useContract = (contractId: string | null) => {
   return useAPI(
     () => contractAPI.getById(contractId!),
     [contractId]
@@ -70,7 +70,7 @@ export const useContractUpload = () => {
 };
 
 // Analysis hooks
-export const useContractAnalysis = (contractId: number | null) => {
+export const useContractAnalysis = (contractId: string | null) => {
   return useAPI(
     () => analysisAPI.analyze(contractId!),
     [contractId]

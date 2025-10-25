@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Search, FileText, AlertTriangle } from 'lucide-react';
 import { useDatasetClauses, useDatasetClauseTypes, useDatasetRiskLevels } from '../hooks/useAPI';
 
 const DatasetExplorer: React.FC = () => {

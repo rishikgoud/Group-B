@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, AlertTriangle, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { Upload, FileText, AlertTriangle, CheckCircle, Clock, Trash2, Brain, BarChart3 } from 'lucide-react';
 import { useContracts, useContractUpload } from '../hooks/useAPI';
+import { analysisAPI } from '../services/api';
+import AnalysisLoading from '../components/AnalysisLoading';
+import AnalysisReport from '../components/AnalysisReport';
 import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
   const [dragActive, setDragActive] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [selectedContract, setSelectedContract] = useState<string | null>(null);
   const { data: contractsData, loading: contractsLoading, error: contractsError, refetch: refetchContracts } = useContracts();
   const { uploadContract, uploading, error: uploadError } = useContractUpload();
 
@@ -49,8 +55,59 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleAnalyze = async (contractId: string) => {
+    setAnalyzing(true);
+    setSelectedContract(contractId);
+    
+    try {
+      const response = await analysisAPI.analyze(contractId, 'full');
+      setAnalysisResult(response.data);
+      toast.success('Contract analysis completed successfully!');
+    } catch (error: any) {
+      toast.error(`Analysis failed: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleViewAnalysis = async (contractId: string) => {
+    try {
+      const response = await analysisAPI.getContractAnalysis(contractId);
+      setAnalysisResult(response.data);
+      setSelectedContract(contractId);
+    } catch (error: any) {
+      toast.error(`Failed to load analysis: ${error.response?.data?.detail || error.message}`);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
+      {/* Analysis Loading Overlay */}
+      <AnalysisLoading 
+        isVisible={analyzing} 
+        message="Analyzing contract with AI. This may take a few moments..."
+      />
+      
+      {/* Analysis Report Modal */}
+      {analysisResult && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto">
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Analysis Report</h2>
+                <button 
+                  onClick={() => setAnalysisResult(null)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              <AnalysisReport analysis={analysisResult} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Contract Dashboard</h1>
         <p className="text-gray-600">Upload and analyze your contracts with AI-powered insights</p>
@@ -157,9 +214,26 @@ const Dashboard: React.FC = () => {
                     }`}>
                       {contract.processed ? 'Processed' : 'Pending'}
                     </span>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                      View Analysis
+                    
+                    {/* Analysis Button */}
+                    <button 
+                      onClick={() => handleAnalyze(contract.id)}
+                      disabled={analyzing}
+                      className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                    >
+                      <Brain className="h-4 w-4" />
+                      <span>Analyze</span>
                     </button>
+                    
+                    {/* View Analysis Button */}
+                    <button 
+                      onClick={() => handleViewAnalysis(contract.id)}
+                      className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>View Report</span>
+                    </button>
+                    
                     <button className="text-red-600 hover:text-red-700 text-sm font-medium">
                       <Trash2 className="h-4 w-4" />
                     </button>

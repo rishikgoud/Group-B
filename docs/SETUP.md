@@ -69,7 +69,6 @@
 #### Backend (.env)
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-PERPLEXITY_API_KEY=your_perplexity_api_key_here
 MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/legalease
 SECRET_KEY=your_secret_key_here
 DEBUG=True
@@ -121,7 +120,6 @@ legalEase-ai/
 
 1. **Get API Keys:**
    - Gemini Pro API key from Google AI Studio
-   - Perplexity API key from Perplexity AI
 
 2. **Set up MongoDB:**
    - Create a free MongoDB Atlas cluster

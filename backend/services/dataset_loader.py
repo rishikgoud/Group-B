@@ -1,40 +1,39 @@
 """
-Dataset loader service for Kaggle Contracts Clauses Dataset
+Dataset loader service for loading Kaggle dataset into MongoDB
 """
 
 import pandas as pd
 import os
 import requests
 import zipfile
-from sqlalchemy.orm import Session
-from app.models.database import Clause
+from app.models.mongodb_models import Clause
 from typing import List, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
 
 class DatasetLoaderService:
-    def __init__(self, db: Session):
+    def __init__(self, db):
         self.db = db
         self.dataset_url = "https://www.kaggle.com/datasets/mohammedalrashidan/contracts-clauses-datasets/download"
         self.data_dir = "data"
         self.dataset_file = os.path.join(self.data_dir, "contracts_clauses_dataset.csv")
     
-    def load_dataset_to_db(self) -> bool:
-        """Load the Kaggle dataset into the database"""
+    async def load_dataset_to_db(self) -> bool:
+        """Load the Kaggle dataset into MongoDB"""
         try:
             # Check if dataset is already loaded
-            if self._is_dataset_loaded():
+            if await self._is_dataset_loaded():
                 logger.info("Dataset already loaded, skipping...")
                 return True
             
             # Download and process dataset
-            if not self._download_dataset():
+            if not await self._download_dataset():
                 logger.error("Failed to download dataset")
                 return False
             
             # Parse and insert data
-            if not self._parse_and_insert_data():
+            if not await self._parse_and_insert_data():
                 logger.error("Failed to parse and insert dataset")
                 return False
             
@@ -45,14 +44,12 @@ class DatasetLoaderService:
             logger.error(f"Error loading dataset: {e}")
             return False
     
-    def _is_dataset_loaded(self) -> bool:
+    async def _is_dataset_loaded(self) -> bool:
         """Check if dataset is already loaded in database"""
-        count = self.db.query(Clause).filter(
-            Clause.source_dataset == "kaggle_contracts_clauses"
-        ).count()
+        count = await Clause.find(Clause.source_dataset == "kaggle_contracts_clauses").count()
         return count > 0
     
-    def _download_dataset(self) -> bool:
+    async def _download_dataset(self) -> bool:
         """Download the dataset from Kaggle"""
         try:
             # Create data directory
@@ -138,8 +135,8 @@ class DatasetLoaderService:
         df.to_csv(self.dataset_file, index=False)
         logger.info(f"Sample dataset created at {self.dataset_file}")
     
-    def _parse_and_insert_data(self) -> bool:
-        """Parse CSV and insert data into database"""
+    async def _parse_and_insert_data(self) -> bool:
+        """Parse CSV and insert data into MongoDB"""
         try:
             # Read CSV file
             df = pd.read_csv(self.dataset_file)
@@ -157,51 +154,71 @@ class DatasetLoaderService:
                 clauses_to_insert.append(clause)
             
             # Bulk insert
-            self.db.add_all(clauses_to_insert)
-            self.db.commit()
+            await Clause.insert_many(clauses_to_insert)
             
             logger.info(f"Inserted {len(clauses_to_insert)} clauses into database")
             return True
             
         except Exception as e:
             logger.error(f"Error parsing and inserting data: {e}")
-            self.db.rollback()
             return False
     
-    def get_clauses_count(self) -> int:
+    async def get_clauses_count(self) -> int:
         """Get total count of clauses in dataset"""
-        return self.db.query(Clause).filter(
-            Clause.source_dataset == "kaggle_contracts_clauses"
-        ).count()
+        return await Clause.find(Clause.source_dataset == "kaggle_contracts_clauses").count()
     
-    def get_clauses_by_type(self, clause_type: str) -> List[Clause]:
+    async def get_clauses_by_type(self, clause_type: str) -> List[Clause]:
         """Get clauses by type"""
-        return self.db.query(Clause).filter(
+        return await Clause.find(
             Clause.clause_type == clause_type,
             Clause.source_dataset == "kaggle_contracts_clauses"
-        ).all()
+        ).to_list()
     
-    def get_clauses_by_risk_level(self, risk_level: str) -> List[Clause]:
+    async def get_clauses_by_risk_level(self, risk_level: str) -> List[Clause]:
         """Get clauses by risk level"""
-        return self.db.query(Clause).filter(
+        return await Clause.find(
             Clause.risk_level == risk_level,
             Clause.source_dataset == "kaggle_contracts_clauses"
-        ).all()
+        ).to_list()
     
-    def search_clauses(self, search_text: str = None, clause_type: str = None, 
+    async def search_clauses(self, search_text: str = None, clause_type: str = None, 
                       risk_level: str = None, limit: int = 100) -> List[Clause]:
         """Search clauses with filters"""
-        query = self.db.query(Clause).filter(
-            Clause.source_dataset == "kaggle_contracts_clauses"
-        )
+        query = Clause.find(Clause.source_dataset == "kaggle_contracts_clauses")
         
         if search_text:
-            query = query.filter(Clause.text.contains(search_text))
+            query = query.find({"$text": {"$search": search_text}})
         
         if clause_type:
-            query = query.filter(Clause.clause_type == clause_type)
+            query = query.find(Clause.clause_type == clause_type)
         
         if risk_level:
-            query = query.filter(Clause.risk_level == risk_level)
+            query = query.find(Clause.risk_level == risk_level)
         
-        return query.limit(limit).all()
+        return await query.limit(limit).to_list()
+    
+    async def get_dataset_stats(self) -> Dict[str, Any]:
+        """Get dataset statistics"""
+        total_clauses = await self.get_clauses_count()
+        
+        # Count by clause type
+        clause_types_pipeline = [
+            {"$match": {"source_dataset": "kaggle_contracts_clauses"}},
+            {"$group": {"_id": "$clause_type", "count": {"$sum": 1}}}
+        ]
+        clause_types_result = await Clause.aggregate(clause_types_pipeline).to_list()
+        clause_types = {item["_id"]: item["count"] for item in clause_types_result}
+        
+        # Count by risk level
+        risk_levels_pipeline = [
+            {"$match": {"source_dataset": "kaggle_contracts_clauses"}},
+            {"$group": {"_id": "$risk_level", "count": {"$sum": 1}}}
+        ]
+        risk_levels_result = await Clause.aggregate(risk_levels_pipeline).to_list()
+        risk_levels = {item["_id"]: item["count"] for item in risk_levels_result}
+        
+        return {
+            "total_clauses": total_clauses,
+            "clause_types": clause_types,
+            "risk_levels": risk_levels
+        }

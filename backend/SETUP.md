@@ -104,7 +104,6 @@ DATABASE_URL=sqlite:///./data/legalease.db
 
 # AI APIs (for future integration)
 GEMINI_API_KEY=your_gemini_api_key
-PERPLEXITY_API_KEY=your_perplexity_api_key
 
 # Application
 SECRET_KEY=your_secret_key
@@ -148,7 +147,7 @@ print(check_db_connection())  # Should return True
 ## 🔮 Next Steps
 
 1. **Install dependencies** and test the setup
-2. **Integrate AI services** (Gemini Pro, Perplexity)
+2. **Integrate AI services** (Gemini Pro)
 3. **Add file processing** (PDF parsing, OCR)
 4. **Implement real analysis** logic
 5. **Add authentication** and user management

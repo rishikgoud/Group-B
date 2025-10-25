@@ -1,53 +1,78 @@
 """
-Database configuration and connection for LegalEase AI
+MongoDB database configuration and connection
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
 from app.core.config import settings
-import os
-
-# Create database directory if it doesn't exist
-os.makedirs("data", exist_ok=True)
-
-# SQLite database URL
-SQLALCHEMY_DATABASE_URL = f"sqlite:///./data/legalease.db"
-
-# Create SQLAlchemy engine
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},  # Needed for SQLite
-    echo=settings.DEBUG  # Log SQL queries in debug mode
+from app.models.mongodb_models import (
+    Contract, ContractAnalysis, ContractClause, 
+    Clause, User, AnalysisSession
 )
+import asyncio
+from typing import AsyncGenerator
 
-# Create SessionLocal class
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# MongoDB client
+client: AsyncIOMotorClient = None
+database = None
 
-# Create Base class
-Base = declarative_base()
-
-def get_db():
-    """Dependency to get database session"""
-    db = SessionLocal()
+async def init_db():
+    """Initialize MongoDB database and collections"""
+    global client, database
+    
     try:
-        yield db
-    finally:
-        db.close()
-
-def init_db():
-    """Initialize database tables"""
-    from app.models.database import Base
-    Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created successfully")
-
-def check_db_connection():
-    """Check database connection"""
-    try:
-        db = SessionLocal()
-        db.execute("SELECT 1")
-        db.close()
+        # Create MongoDB client
+        client = AsyncIOMotorClient(settings.MONGODB_URL)
+        database = client[settings.DATABASE_NAME]
+        
+        # Initialize Beanie with all document models
+        await init_beanie(
+            database=database,
+            document_models=[
+                Contract,
+                ContractAnalysis, 
+                ContractClause,
+                Clause,
+                User,
+                AnalysisSession
+            ]
+        )
+        
+        print("✅ MongoDB database initialized successfully")
         return True
+        
     except Exception as e:
-        print(f"❌ Database connection failed: {e}")
+        print(f"❌ MongoDB initialization failed: {e}")
         return False
+
+async def get_database():
+    """Get database instance"""
+    if database is None:
+        await init_db()
+    return database
+
+async def close_db():
+    """Close database connection"""
+    if client:
+        client.close()
+        print("✅ MongoDB connection closed")
+
+async def check_db_connection():
+    """Check if MongoDB is accessible"""
+    try:
+        if client is None:
+            await init_db()
+        
+        # Test database connection
+        await client.admin.command('ping')
+        print("✅ MongoDB connection verified")
+        return True
+        
+    except Exception as e:
+        print(f"❌ MongoDB connection failed: {e}")
+        return False
+
+# For backward compatibility with existing code
+def get_db():
+    """Get database session (for compatibility)"""
+    return database

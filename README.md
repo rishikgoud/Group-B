@@ -125,8 +125,6 @@ LegalEase acts as your **personal legal assistant**, helping you understand and 
 ↓
 [Gemini Pro Analyzes Clauses + Summarizes + Scores Risk]
 ↓
-[Perplexity API Cross-verifies Clause Facts]
-↓
 [Insights + Risk Data Saved in MongoDB]
 ↓
 [Frontend Displays Dashboard + Clause Cards + Chat]
@@ -199,7 +197,7 @@ Every day, people sign contracts — employment offers, NDAs, leases, vendor agr
 
 ## 💡 Solution Overview
 
-LegalEase is an AI-powered web app that makes contracts understandable, transparent, and safe. Using Gemini Pro, Perplexity Pro, and open legal datasets, it helps users:
+LegalEase is an AI-powered web app that makes contracts understandable, transparent, and safe. Using Gemini Pro and open legal datasets, it helps users:
 
 - 🧾 Upload and analyze any contract (PDF, text, or image)
 - 🧠 Extract and classify clauses by type (confidentiality, liability, etc.)
@@ -238,7 +236,6 @@ LegalEase is an AI-powered web app that makes contracts understandable, transpar
 │        AI & Intelligence Layer              │
 │────────────────────────────────────────────│
 │  • Gemini Pro: Summarization, Risk Scoring  │
-│  • Perplexity API: Factual Verification     │
 │  • Kaggle Dataset: Fine-tuned prompts       │
 │  • Optional: Hugging Face legal models      │
 └────────────────────────────────────────────┘
@@ -256,7 +253,6 @@ LegalEase is an AI-powered web app that makes contracts understandable, transpar
 | | pytesseract | OCR for images |
 | Database | MongoDB Atlas (Free Tier) | Store history, users, analytics |
 | AI Layer | Gemini Pro | Clause summarization & risk detection |
-| | Perplexity Pro | Factual clause validation |
 | | LangChain (optional) | RAG & clause similarity search |
 | Dataset | Kaggle Contract Clauses Dataset | Legal clause classification data |
 | Hosting | Vercel / Netlify + Firebase Auth | Free, fast, secure hosting |
@@ -289,7 +285,6 @@ Create `.env` files in both backend and frontend directories:
 **Backend (.env):**
 ```
 GEMINI_API_KEY=your_gemini_key
-PERPLEXITY_API_KEY=your_perplexity_key
 MONGO_URI=your_mongo_connection_string
 SECRET_KEY=your_secret_key
 ```

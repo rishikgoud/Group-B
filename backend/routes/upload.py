@@ -3,14 +3,13 @@ Contract upload routes
 """
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from sqlalchemy.orm import Session
 from typing import List
 import aiofiles
 import os
 import uuid
 from datetime import datetime
 
-from app.core.database import get_db
+from app.core.database import get_database
 from app.models.schemas import ContractUploadResponse, ContractListResponse, ContractDetailResponse
 from services.contract_service import ContractService
 
@@ -19,7 +18,7 @@ router = APIRouter()
 @router.post("/upload", response_model=ContractUploadResponse)
 async def upload_contract(
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db = Depends(get_database)
 ):
     """Upload a contract file for analysis"""
     
@@ -63,13 +62,13 @@ async def upload_contract(
 async def list_contracts(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db = Depends(get_database)
 ):
     """List all uploaded contracts"""
     try:
         contract_service = ContractService(db)
-        contracts = contract_service.get_contracts(skip=skip, limit=limit)
-        total_count = contract_service.get_contracts_count()
+        contracts = await contract_service.get_contracts(skip=skip, limit=limit)
+        total_count = await contract_service.get_contracts_count()
         
         return ContractListResponse(
             contracts=contracts,
@@ -83,13 +82,13 @@ async def list_contracts(
 
 @router.get("/{contract_id}", response_model=ContractDetailResponse)
 async def get_contract(
-    contract_id: int,
-    db: Session = Depends(get_db)
+    contract_id: str,
+    db = Depends(get_database)
 ):
     """Get detailed information about a specific contract"""
     try:
         contract_service = ContractService(db)
-        contract = contract_service.get_contract_by_id(contract_id)
+        contract = await contract_service.get_contract_by_id(contract_id)
         
         if not contract:
             raise HTTPException(
@@ -98,20 +97,14 @@ async def get_contract(
             )
         
         return ContractDetailResponse(
-            id=contract.id,
-            filename=contract.filename,
-            original_filename=contract.original_filename,
+            id=str(contract.id),
+            filename=contract.file_name,
+            original_filename=contract.file_name,
             file_size=contract.file_size,
             file_type=contract.file_type,
-            upload_date=contract.upload_date,
+            upload_date=contract.uploaded_at,
             processed=contract.processed,
-            analyses=[{
-                "id": analysis.id,
-                "analysis_type": analysis.analysis_type,
-                "overall_risk_score": analysis.overall_risk_score,
-                "total_clauses": analysis.total_clauses,
-                "analysis_date": analysis.analysis_date
-            } for analysis in contract.analyses]
+            analyses=[]  # TODO: Add analysis relationship
         )
     except HTTPException:
         raise
@@ -123,13 +116,13 @@ async def get_contract(
 
 @router.delete("/{contract_id}")
 async def delete_contract(
-    contract_id: int,
-    db: Session = Depends(get_db)
+    contract_id: str,
+    db = Depends(get_database)
 ):
     """Delete a contract and its associated data"""
     try:
         contract_service = ContractService(db)
-        success = contract_service.delete_contract(contract_id)
+        success = await contract_service.delete_contract(contract_id)
         
         if not success:
             raise HTTPException(

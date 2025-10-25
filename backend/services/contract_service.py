@@ -2,8 +2,7 @@
 Contract service for business logic
 """
 
-from sqlalchemy.orm import Session
-from app.models.database import Contract
+from app.models.mongodb_models import Contract
 from typing import List, Dict, Any, Optional
 import aiofiles
 import os
@@ -11,7 +10,7 @@ import uuid
 from datetime import datetime
 
 class ContractService:
-    def __init__(self, db: Session):
+    def __init__(self, db):
         self.db = db
     
     async def upload_contract(self, file) -> Dict[str, Any]:
@@ -33,54 +32,52 @@ class ContractService:
         
         # Create database record
         contract = Contract(
-            filename=unique_filename,
-            original_filename=file.filename,
+            title=file.filename,
+            file_name=file.filename,
             file_path=file_path,
             file_size=len(content),
             file_type=file_extension,
-            upload_date=datetime.utcnow()
+            uploaded_at=datetime.utcnow()
         )
         
-        self.db.add(contract)
-        self.db.commit()
-        self.db.refresh(contract)
+        await contract.insert()
         
         return {
-            "contract_id": contract.id,
-            "filename": contract.filename,
+            "contract_id": str(contract.id),
+            "filename": contract.file_name,
             "file_size": contract.file_size,
             "file_type": contract.file_type,
-            "upload_date": contract.upload_date
+            "upload_date": contract.uploaded_at
         }
     
-    def get_contracts(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_contracts(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
         """Get list of contracts"""
-        contracts = self.db.query(Contract).offset(skip).limit(limit).all()
+        contracts = await Contract.find().skip(skip).limit(limit).to_list()
         
         return [
             {
-                "id": contract.id,
-                "filename": contract.filename,
-                "original_filename": contract.original_filename,
+                "id": str(contract.id),
+                "filename": contract.file_name,
+                "original_filename": contract.file_name,
                 "file_size": contract.file_size,
                 "file_type": contract.file_type,
-                "upload_date": contract.upload_date.isoformat(),
+                "upload_date": contract.uploaded_at.isoformat(),
                 "processed": contract.processed
             }
             for contract in contracts
         ]
     
-    def get_contracts_count(self) -> int:
+    async def get_contracts_count(self) -> int:
         """Get total count of contracts"""
-        return self.db.query(Contract).count()
+        return await Contract.count()
     
-    def get_contract_by_id(self, contract_id: int) -> Optional[Contract]:
+    async def get_contract_by_id(self, contract_id: str) -> Optional[Contract]:
         """Get contract by ID"""
-        return self.db.query(Contract).filter(Contract.id == contract_id).first()
+        return await Contract.get(contract_id)
     
-    def delete_contract(self, contract_id: int) -> bool:
+    async def delete_contract(self, contract_id: str) -> bool:
         """Delete contract and associated files"""
-        contract = self.db.query(Contract).filter(Contract.id == contract_id).first()
+        contract = await Contract.get(contract_id)
         
         if not contract:
             return False
@@ -92,15 +89,14 @@ class ContractService:
         except Exception as e:
             print(f"Warning: Could not delete file {contract.file_path}: {e}")
         
-        # Delete from database (cascade will handle related records)
-        self.db.delete(contract)
-        self.db.commit()
+        # Delete from database
+        await contract.delete()
         
         return True
     
-    def mark_contract_processed(self, contract_id: int, extracted_text: str = None) -> bool:
+    async def mark_contract_processed(self, contract_id: str, extracted_text: str = None) -> bool:
         """Mark contract as processed"""
-        contract = self.db.query(Contract).filter(Contract.id == contract_id).first()
+        contract = await Contract.get(contract_id)
         
         if not contract:
             return False
@@ -109,5 +105,5 @@ class ContractService:
         if extracted_text:
             contract.extracted_text = extracted_text
         
-        self.db.commit()
+        await contract.save()
         return True

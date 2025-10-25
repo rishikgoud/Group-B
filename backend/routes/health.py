@@ -3,8 +3,7 @@ Health check routes
 """
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from app.core.database import get_db, check_db_connection
+from app.core.database import get_database, check_db_connection
 from app.models.schemas import HealthResponse
 
 router = APIRouter()
@@ -15,11 +14,11 @@ async def health_check():
     return HealthResponse()
 
 @router.get("/detailed")
-async def detailed_health_check(db: Session = Depends(get_db)):
+async def detailed_health_check(db = Depends(get_database)):
     """Detailed health check with dependencies"""
     
     # Check database connection
-    db_status = check_db_connection()
+    db_status = await check_db_connection()
     
     return {
         "status": "healthy" if db_status else "unhealthy",

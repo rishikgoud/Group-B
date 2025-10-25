@@ -5,7 +5,7 @@
 import axios from 'axios';
 
 // API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 const API_VERSION = process.env.REACT_APP_API_VERSION || 'v1';
 
 // Create axios instance
@@ -65,18 +65,18 @@ export const contractAPI = {
     api.get(`/contracts/list?skip=${skip}&limit=${limit}`),
 
   // Get contract by ID
-  getById: (contractId: number) => 
+  getById: (contractId: string) => 
     api.get(`/contracts/${contractId}`),
 
   // Delete contract
-  delete: (contractId: number) => 
+  delete: (contractId: string) => 
     api.delete(`/contracts/${contractId}`),
 };
 
 // Analysis API
 export const analysisAPI = {
   // Analyze contract
-  analyze: (contractId: number, analysisType = 'full') =>
+  analyze: (contractId: string, analysisType = 'full') =>
     api.post('/analysis/analyze', {
       contract_id: contractId,
       analysis_type: analysisType,
@@ -88,9 +88,39 @@ export const analysisAPI = {
   // Get clause types
   getClauseTypes: () => api.get('/analysis/clause-types'),
 
-  // Get contract analysis
-  getContractAnalysis: (contractId: number) =>
-    api.get(`/analysis/contract/${contractId}/analysis`),
+  // Chat with contract (enhanced)
+  chat: (contractText: string, question: string, contractContext?: any) =>
+    api.post('/analysis/chat', {
+      contract_text: contractText,
+      question,
+      contract_context: contractContext,
+    }),
+
+  // Compare contracts (enhanced)
+  compareContracts: (contract1Id: string, contract2Id: string, comparisonType = 'comprehensive') =>
+    api.post('/analysis/compare-contracts', {
+      contract1_id: contract1Id,
+      contract2_id: contract2Id,
+      comparison_type: comparisonType,
+    }),
+
+  // Extract structured data
+  extractStructuredData: (contractId: string, dataTypes?: string[]) =>
+    api.post('/analysis/extract-structured-data', {
+      contract_id: contractId,
+      data_types: dataTypes,
+    }),
+
+  // Get analytics dashboard
+  getAnalyticsDashboard: () => api.get('/analysis/analytics/dashboard'),
+
+  // Explain clause (enhanced)
+  explainClause: (clauseText: string, clauseType: string, contractContext?: any) =>
+    api.post('/analysis/explain-clause', {
+      clause_text: clauseText,
+      clause_type: clauseType,
+      contract_context: contractContext,
+    }),
 };
 
 // Dataset API
@@ -113,7 +143,7 @@ export const datasetAPI = {
   },
 
   // Get clause by ID
-  getClauseById: (clauseId: number) =>
+  getClauseById: (clauseId: string) =>
     api.get(`/dataset/clauses/${clauseId}`),
 
   // Get clause types
@@ -129,18 +159,33 @@ export const datasetAPI = {
   reload: () => api.post('/dataset/reload'),
 };
 
-// Chat API (placeholder for future implementation)
-export const chatAPI = {
-  // Send message
-  sendMessage: (message: string, sessionId?: string, contractId?: number) =>
-    api.post('/chat/ask', {
-      message,
-      session_id: sessionId,
-      contract_id: contractId,
+// Enhanced Chat API
+export const enhancedChatAPI = {
+  // Chat with contract using advanced AI
+  chatWithContract: (contractText: string, question: string, contractContext?: any) =>
+    api.post('/analysis/chat', {
+      contract_text: contractText,
+      question,
+      contract_context: contractContext,
     }),
 
-  // Get suggestions
-  getSuggestions: () => api.get('/chat/suggestions'),
+  // Get contract comparison
+  compareContracts: (contract1Id: string, contract2Id: string, comparisonType = 'comprehensive') =>
+    api.post('/analysis/compare-contracts', {
+      contract1_id: contract1Id,
+      contract2_id: contract2Id,
+      comparison_type: comparisonType,
+    }),
+
+  // Extract structured data
+  extractStructuredData: (contractId: string, dataTypes?: string[]) =>
+    api.post('/analysis/extract-structured-data', {
+      contract_id: contractId,
+      data_types: dataTypes,
+    }),
+
+  // Get analytics dashboard
+  getAnalytics: () => api.get('/analysis/analytics/dashboard'),
 };
 
 // Error handling utility
