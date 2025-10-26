@@ -1,4 +1,4 @@
-# ⚖️ LegalEase — AI Contract Analyzer
+# ⚖️ Legal Decoder — AI Contract Analyzer
 
 <<<<<<< HEAD
 > **Understand. Analyze. Protect.**  
@@ -22,7 +22,7 @@ Traditional legal review is **slow, expensive, and inaccessible** — creating a
 
 ## 💡 Solution Overview
 
-**LegalEase** is an **AI-powered web app** that makes contracts understandable, transparent, and safe.  
+**Legal Decoder** is an **AI-powered web app** that makes contracts understandable, transparent, and safe.  
 Using **Gemini Pro**, **Perplexity Pro**, and **open legal datasets**, it helps users:
 
 - 🧾 **Upload and analyze** any contract (PDF, text, or image)
@@ -33,7 +33,7 @@ Using **Gemini Pro**, **Perplexity Pro**, and **open legal datasets**, it helps 
 - 📊 **Visualize clause insights** with risk dashboards
 - 📚 **Learn from real-world clauses** using a public Kaggle dataset
 
-LegalEase acts as your **personal legal assistant**, helping you understand and negotiate contracts confidently.
+Legal Decoder acts as your **personal legal assistant**, helping you understand and negotiate contracts confidently.
 
 ---
 
@@ -197,7 +197,7 @@ Every day, people sign contracts — employment offers, NDAs, leases, vendor agr
 
 ## 💡 Solution Overview
 
-LegalEase is an AI-powered web app that makes contracts understandable, transparent, and safe. Using Gemini Pro and open legal datasets, it helps users:
+LegalDecoder is an AI-powered web app that makes contracts understandable, transparent, and safe. Using Gemini Pro and open legal datasets, it helps users:
 
 - 🧾 Upload and analyze any contract (PDF, text, or image)
 - 🧠 Extract and classify clauses by type (confidentiality, liability, etc.)
